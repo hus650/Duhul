@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل الحضور</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['IBM Plex Sans Arabic', 'sans-serif'] },
+                    colors: {
+                        stoneBg: '#F7F7F5',
+                        forest: { DEFAULT: '#1E4D3B', hover: '#163A2C', light: '#ECF3F0', border: '#C6DDD3' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'IBM Plex Sans Arabic', sans-serif; background-color: #F7F7F5; color: #0F172A; -webkit-font-smoothing: antialiased; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        @keyframes softFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: softFade 0.2s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-forest selection:text-white">
+
+    <div id="toast-container" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 max-w-sm w-11/12 pointer-events-none"></div>
+
+    <!-- AUTH -->
+    <div id="auth-view" class="hidden flex-1 flex items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden fade-in">
+            <div class="px-6 pt-7 pb-5 border-b border-slate-100">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-9 h-9 rounded-xl bg-forest text-white flex items-center justify-center text-sm"><i class="fa-solid fa-clock"></i></div>
+                    <h1 class="text-xl font-bold text-slate-900">سجل الحضور</h1>
+                </div>
+                <p class="text-sm text-slate-500 leading-relaxed">تسجيل أوقات حضور الطلاب والموظفين داخل المجموعات.</p>
+            </div>
+
+            <div class="px-6 pt-5">
+                <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/60">
+                    <button type="button" id="tab-register" class="py-2 text-xs sm:text-sm font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition-all">إنشاء حساب جديد</button>
+                    <button type="button" id="tab-login" class="py-2 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all">تسجيل الدخول</button>
+                </div>
+            </div>
+
+            <form id="register-form" class="p-6 space-y-4">
+                <div>
+                    <label for="reg-username" class="block text-xs font-semibold text-slate-700 mb-1.5">اسم المستخدم</label>
+                    <input type="text" id="reg-username" maxlength="30" required autocomplete="username" placeholder="أدخل اسمك كما سيظهر في السجل"
+                        class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/15 transition-all">
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="reg-password" class="text-xs font-semibold text-slate-700">كلمة المرور</label>
+                        <span id="reg-pass-counter" class="text-[11px] text-slate-400">0 / 100</span>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="reg-password" required minlength="1" maxlength="100" autocomplete="new-password" placeholder="من حرف واحد إلى 100 حرف"
+                            class="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/15 transition-all">
+                        <button type="button" data-toggle-pass="reg-password" class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 hover:text-slate-600"><i class="fa-regular fa-eye text-xs"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <label for="reg-password-confirm" class="block text-xs font-semibold text-slate-700 mb-1.5">تأكيد كلمة المرور</label>
+                    <div class="relative">
+                        <input type="password" id="reg-password-confirm" required minlength="1" maxlength="100" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور"
+                            class="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/15 transition-all">
+                        <button type="button" data-toggle-pass="reg-password-confirm" class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 hover:text-slate-600"><i class="fa-regular fa-eye text-xs"></i></button>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 bg-forest hover:bg-forest-hover text-white text-sm font-semibold rounded-xl transition-colors">إنشاء الحساب والمتابعة</button>
+            </form>
+
+            <form id="login-form" class="hidden p-6 space-y-4">
+                <div>
+                    <label for="login-username" class="block text-xs font-semibold text-slate-700 mb-1.5">اسم المستخدم</label>
+                    <input type="text" id="login-username" maxlength="30" required autocomplete="username" placeholder="أدخل اسم المستخدم"
+                        class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/15 transition-all">
+                </div>
+                <div>
+                    <label for="login-password" class="block text-xs font-semibold text-slate-700 mb-1.5">كلمة المرور</label>
+                    <div class="relative">
+                        <input type="password" id="login-password" required minlength="1" maxlength="100" autocomplete="current-password" placeholder="أدخل كلمة المرور"
+                            class="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/15 transition-all">
+                        <button type="button" data-toggle-pass="login-password" class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 hover:text-slate-600"><i class="fa-regular fa-eye text-xs"></i></button>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 bg-forest hover:bg-forest-hover text-white text-sm font-semibold rounded-xl transition-colors">دخول</button>
+            </form>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                <span class="text-xs text-slate-500">حساب تجريبي جاهز (أحمد / 1)</span>
+                <button type="button" id="btn-demo-login" class="text-xs font-semibold text-forest hover:underline">دخول سريع</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WORKSPACE -->
+    <div id="workspace-view" class="hidden flex-1 flex flex-col md:flex-row min-h-screen">
+
+        <div class="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+            <div class="flex items-center gap-2.5">
+                <button type="button" id="btn-mobile-menu" class="p-2 rounded-lg text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-bars"></i></button>
+                <span class="font-bold text-sm text-slate-900">سجل الحضور</span>
+            </div>
+            <span id="mobile-user-badge" class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg"></span>
+        </div>
+
+        <div id="sidebar-backdrop" class="hidden fixed inset-0 bg-slate-900/30 z-30 md:hidden"></div>
+
+        <aside id="sidebar" class="fixed md:static inset-y-0 right-0 z-40 w-72 bg-white border-l border-slate-200 flex flex-col transform translate-x-full md:translate-x-0 transition-transform duration-200">
+            <div class="p-5 border-b border-slate-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-forest text-white flex items-center justify-center text-xs"><i class="fa-solid fa-clock"></i></div>
+                        <span class="font-bold text-base text-slate-900">سجل الحضور</span>
+                    </div>
+                    <button type="button" id="btn-close-sidebar" class="md:hidden p-1.5 text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="p-3 rounded-xl bg-stoneBg border border-slate-200/80 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div id="sidebar-avatar" class="w-8 h-8 rounded-lg bg-forest-light text-forest font-bold text-xs flex items-center justify-center shrink-0">م</div>
+                        <div class="min-w-0">
+                            <div id="sidebar-username" class="text-sm font-semibold text-slate-900 truncate">...</div>
+                            <div class="text-[11px] text-slate-500">متصل</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 flex-1 overflow-y-auto space-y-4">
+                <button type="button" id="btn-open-hub" class="w-full py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold flex items-center justify-between transition-colors">
+                    <span>المجموعات والبحث</span>
+                    <i class="fa-solid fa-plus text-slate-400"></i>
+                </button>
+                <div>
+                    <div class="flex items-center justify-between px-1 mb-2">
+                        <span class="text-xs font-semibold text-slate-400">مجموعاتي</span>
+                        <span id="sidebar-groups-count" class="text-[11px] text-slate-400">0</span>
+                    </div>
+                    <div id="sidebar-groups-list" class="space-y-1"></div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-100">
+                <button type="button" id="btn-logout" class="w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-rose-700 hover:bg-rose-50 transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>تسجيل الخروج</span>
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col min-w-0 h-[calc(100dvh-53px)] md:h-[100dvh] overflow-hidden">
+
+            <!-- HUB -->
+            <main id="hub-view" class="hidden flex-1 overflow-y-auto p-4 sm:p-8">
+                <div class="max-w-3xl mx-auto space-y-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">المجموعات</h2>
+                        <p class="text-sm text-slate-500 mt-1">ابحث عن مجموعة مكان العمل أو الدراسة للانضمام إليها، أو أنشئ مجموعة جديدة.</p>
+                    </div>
+
+                    <section class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-900">البحث عن مجموعة</h3>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+                            <input type="text" id="hub-search-input" placeholder="اكتب اسم المجموعة أو اسم المشرف..."
+                                class="w-full pr-10 pl-4 py-2.5 bg-stoneBg border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-forest transition-all">
+                        </div>
+                        <div id="hub-groups-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1"></div>
+                    </section>
+
+                    <section class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">إنشاء مجموعة جديدة</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">ستكون مشرفاً على المجموعة ويمكنك قبول أو رفض طلبات الانضمام.</p>
+                        </div>
+                        <form id="create-group-form" class="space-y-3.5">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div>
+                                    <label for="new-group-name" class="block text-xs font-semibold text-slate-700 mb-1">اسم المجموعة</label>
+                                    <input type="text" id="new-group-name" maxlength="40" required placeholder="مثال: مكتبة النور"
+                                        class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-forest">
+                                </div>
+                                <div>
+                                    <label for="new-group-desc" class="block text-xs font-semibold text-slate-700 mb-1">وصف مختصر (اختياري)</label>
+                                    <input type="text" id="new-group-desc" maxlength="80" placeholder="مثال: الفترة الصباحية"
+                                        class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-forest">
+                                </div>
+                            </div>
+                            <div class="pt-1">
+                                <button type="submit" class="px-5 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors">إنشاء المجموعة</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </main>
+
+            <!-- ROOM -->
+            <main id="room-view" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+                <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 id="room-title" class="text-base sm:text-lg font-bold text-slate-900">اسم المجموعة</h2>
+                            <span id="room-role-badge" class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">عضو</span>
+                        </div>
+                        <p id="room-subtitle" class="text-xs text-slate-500 mt-0.5">المشرف: ...</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="btn-open-members" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-users text-slate-400"></i>
+                            <span>الأعضاء (<span id="room-members-count">0</span>)</span>
+                            <span id="room-pending-dot" class="hidden w-2 h-2 rounded-full bg-amber-500"></span>
+                        </button>
+                        <button type="button" id="btn-copy-summary" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center gap-1.5 transition-colors" title="نسخ ملخص حضور اليوم">
+                            <i class="fa-regular fa-copy text-slate-400"></i>
+                            <span class="hidden sm:inline">نسخ ملخص اليوم</span>
+                        </button>
+                    </div>
+                </header>
+
+                <div id="admin-requests-bar" class="hidden bg-amber-50/90 border-b border-amber-200/80 px-4 sm:px-6 py-2.5 shrink-0">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-xs font-semibold text-amber-900">طلبات انضمام بانتظار الموافقة (<span id="admin-pending-count">0</span>):</span>
+                        <div id="admin-pending-items" class="flex flex-wrap items-center gap-2"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white border-b border-slate-200 px-4 sm:px-6 py-4 shrink-0">
+                    <div class="max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stoneBg border border-slate-200 rounded-2xl p-3.5 sm:p-4">
+                        <div>
+                            <div class="text-xs text-slate-500">التوقيت الحالي</div>
+                            <div id="live-clock-display" class="text-sm sm:text-base font-bold text-slate-900 mt-0.5">--:--</div>
+                        </div>
+                        <button type="button" id="btn-log-entry" class="w-full sm:w-auto px-6 py-3 bg-forest hover:bg-forest-hover active:scale-[0.99] text-white text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i>
+                            <span>تسجيل الحضور الآن</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-stoneBg border-b border-slate-200/80 px-4 sm:px-6 py-2 flex items-center justify-between text-xs shrink-0">
+                    <span class="text-slate-500 font-medium">سجل اليوم: <strong id="today-entries-count" class="text-slate-800">0</strong></span>
+                    <div class="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-lg">
+                        <button type="button" data-filter="all" class="filter-tab px-2.5 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-sm">الكل</button>
+                        <button type="button" data-filter="today" class="filter-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">اليوم</button>
+                        <button type="button" data-filter="entries" class="filter-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">الحضور فقط</button>
+                    </div>
+                </div>
+
+                <div id="feed-list" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3"></div>
+
+                <form id="message-form" class="bg-white border-t border-slate-200 p-3 sm:px-6 sm:py-3.5 flex items-center gap-2.5 shrink-0">
+                    <input type="text" id="message-input" maxlength="500" placeholder="اكتب ملاحظة أو رسالة للمجموعة..." autocomplete="off"
+                        class="flex-1 px-4 py-2.5 bg-stoneBg border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-forest transition-all">
+                    <button type="submit" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors shrink-0">إرسال</button>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <!-- MEMBERS MODAL -->
+    <div id="members-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md overflow-hidden shadow-lg fade-in">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-900">أعضاء المجموعة</h3>
+                <button type="button" id="btn-close-members" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="members-modal-body" class="p-5 max-h-80 overflow-y-auto space-y-2.5"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 1. STORAGE KEYS & STATE
+        // ============================================================
+        const STORAGE_KEYS = {
+            DB: 'attendance_app_db_v3',
+            SESSION: 'attendance_app_session_v3',
+            ACTIVE_GROUP: 'attendance_app_active_group_v3'
+        };
+
+        const ARABIC_MONTHS = [
+            "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+            "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+        ];
+
+        let state = { users: [], groups: [], logs: {} };
+        let currentUser = null;
+        let activeGroupId = null;
+        let currentFilter = 'all';
+        let lastCheckInTime = 0;
+
+        // ============================================================
+        // 2. PERSISTENCE
+        // ============================================================
+        function loadDatabase() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.DB);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    state.users = Array.isArray(parsed.users) ? parsed.users : [];
+                    state.groups = Array.isArray(parsed.groups) ? parsed.groups : [];
+                    state.logs = parsed.logs && typeof parsed.logs === 'object' ? parsed.logs : {};
+                    return;
+                }
+            } catch (e) {
+                console.error('Failed to read storage:', e);
+            }
+            seedDefaultData();
+        }
+
+        function saveDatabase() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.DB, JSON.stringify(state));
+            } catch (e) {
+                console.error('Failed to save storage:', e);
+            }
+        }
+
+        function seedDefaultData() {
+            const adminId = 'usr-ahmed';
+            const memberId = 'usr-mohammed';
+            const groupId = 'grp-noor-library';
+
+            state.users = [
+                { id: adminId, username: 'أحمد', password: '1', createdAt: Date.now() - 172800000 },
+                { id: memberId, username: 'محمد', password: '1', createdAt: Date.now() - 86400000 }
+            ];
+
+            state.groups = [{
+                id: groupId,
+                name: 'مكتبة النور',
+                description: 'سجل حضور الطلاب والموظفين',
+                adminId: adminId,
+                adminName: 'أحمد',
+                members: [adminId, memberId],
+                pendingRequests: [],
+                createdAt: Date.now() - 172800000
+            }];
+
+            state.logs = {
+                [groupId]: [
+                    {
+                        id: 'log-init-1', type: 'entry', userId: adminId, username: 'أحمد',
+                        text: formatEntrySentence('أحمد', new Date(Date.now() - 7200000)),
+                        timestamp: Date.now() - 7200000
+                    },
+                    {
+                        id: 'log-init-2', type: 'entry', userId: memberId, username: 'محمد',
+                        text: formatEntrySentence('محمد', new Date(Date.now() - 3600000)),
+                        timestamp: Date.now() - 3600000
+                    }
+                ]
+            };
+
+            saveDatabase();
+        }
+
+        function saveSession(user) {
+            currentUser = user;
+            try { localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify({ id: user.id })); } catch (e) {}
+        }
+
+        function clearSession() {
+            currentUser = null;
+            activeGroupId = null;
+            try {
+                localStorage.removeItem(STORAGE_KEYS.SESSION);
+                localStorage.removeItem(STORAGE_KEYS.ACTIVE_GROUP);
+            } catch (e) {}
+        }
+
+        function restoreSession() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.SESSION);
+                if (!raw) return null;
+                const savedUser = JSON.parse(raw);
+                return state.users.find(u => u.id === savedUser.id) || null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // ============================================================
+        // 3. UTILITIES
+        // ============================================================
+        function cleanName(s) {
+            return (s || '').normalize('NFKC').replace(/\s+/g, ' ').trim();
+        }
+
+        function nameKey(s) {
+            return cleanName(s)
+                .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ى/g, 'ي')
+                .replace(/ة/g, 'ه')
+                .toLowerCase();
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str || '';
+            return div.innerHTML;
+        }
+
+        function formatEntrySentence(username, date = new Date()) {
+            const hh = String(date.getHours()).padStart(2, '0');
+            const mm = String(date.getMinutes()).padStart(2, '0');
+            return `سجّل ${username} الحضور الساعة ${hh}:${mm} بتاريخ ${date.getDate()} ${ARABIC_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        function formatShortTime(timestamp) {
+            const d = new Date(timestamp);
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function isToday(timestamp) {
+            const d = new Date(timestamp);
+            const now = new Date();
+            return d.getDate() === now.getDate() &&
+                   d.getMonth() === now.getMonth() &&
+                   d.getFullYear() === now.getFullYear();
+        }
+
+        function updateLiveClock() {
+            const el = document.getElementById('live-clock-display');
+            if (!el) return;
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            el.textContent = `${hh}:${mm}:${ss} — ${now.getDate()} ${ARABIC_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+        }
+        setInterval(updateLiveClock, 1000);
+
+        function showToast(message, variant = 'neutral') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = variant === 'error'
+                ? 'bg-rose-800 text-white border-rose-700'
+                : variant === 'success'
+                ? 'bg-forest text-white border-forest-hover'
+                : 'bg-slate-900 text-white border-slate-800';
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border text-xs sm:text-sm font-medium shadow-md transition-opacity duration-200 fade-in ${bgClass}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 220);
+            }, 3000);
+        }
+
+        // ============================================================
+        // 4. AUTH
+        // ============================================================
+        const authView = document.getElementById('auth-view');
+        const workspaceView = document.getElementById('workspace-view');
+        const tabRegister = document.getElementById('tab-register');
+        const tabLogin = document.getElementById('tab-login');
+        const registerForm = document.getElementById('register-form');
+        const loginForm = document.getElementById('login-form');
+
+        tabRegister.addEventListener('click', () => {
+            tabRegister.className = 'py-2 text-xs sm:text-sm font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition-all';
+            tabLogin.className = 'py-2 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+            registerForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+        });
+
+        tabLogin.addEventListener('click', () => {
+            tabLogin.className = 'py-2 text-xs sm:text-sm font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition-all';
+            tabRegister.className = 'py-2 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+        });
+
+        document.querySelectorAll('[data-toggle-pass]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.togglePass);
+                if (!input) return;
+                const hidden = input.type === 'password';
+                input.type = hidden ? 'text' : 'password';
+                btn.innerHTML = hidden
+                    ? '<i class="fa-regular fa-eye-slash text-xs"></i>'
+                    : '<i class="fa-regular fa-eye text-xs"></i>';
+            });
+        });
+
+        document.getElementById('reg-password').addEventListener('input', (e) => {
+            document.getElementById('reg-pass-counter').textContent = `${e.target.value.length} / 100`;
+        });
+
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            loadDatabase(); // en güncel veriyi al (başka sekme değiştirmiş olabilir)
+            const username = cleanName(document.getElementById('reg-username').value);
+            const password = document.getElementById('reg-password').value;
+            const confirm = document.getElementById('reg-password-confirm').value;
+
+            if (!username || username.length < 2 || username.length > 30) {
+                showToast('اسم المستخدم يجب أن يكون بين 2 و 30 حرفاً', 'error');
+                return;
+            }
+            if (password.length < 1 || password.length > 100) {
+                showToast('كلمة المرور يجب أن تكون بين 1 و 100 حرف', 'error');
+                return;
+            }
+            if (password !== confirm) {
+                showToast('كلمتا المرور غير متطابقتين', 'error');
+                return;
+            }
+            if (state.users.some(u => nameKey(u.username) === nameKey(username))) {
+                showToast('اسم المستخدم مسجل مسبقاً', 'error');
+                return;
+            }
+
+            const newUser = {
+                id: 'usr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                username,
+                password,
+                createdAt: Date.now()
+            };
+
+            state.users.push(newUser);
+            saveDatabase();
+            registerForm.reset();
+            document.getElementById('reg-pass-counter').textContent = '0 / 100';
+
+            saveSession(newUser);
+            showToast('تم إنشاء الحساب بنجاح', 'success');
+            openWorkspace();
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            loadDatabase();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            const user = state.users.find(
+                u => nameKey(u.username) === nameKey(username) && u.password === password
+            );
+
+            if (!user) {
+                showToast('اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
+                return;
+            }
+
+            loginForm.reset();
+            saveSession(user);
+            openWorkspace();
+        });
+
+        document.getElementById('btn-demo-login').addEventListener('click', () => {
+            const demoUser = state.users.find(u => u.username === 'أحمد');
+            if (demoUser) {
+                saveSession(demoUser);
+                openWorkspace();
+            } else {
+                showToast('الحساب التجريبي غير موجود', 'error');
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            clearSession();
+            closeMobileSidebar();
+            membersModal.classList.add('hidden');
+            workspaceView.classList.add('hidden');
+            authView.classList.remove('hidden');
+            showToast('تم تسجيل الخروج');
+        });
+
+        // ============================================================
+        // 5. WORKSPACE & SIDEBAR
+        // ============================================================
+        const sidebar = document.getElementById('sidebar');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+        const hubView = document.getElementById('hub-view');
+        const roomView = document.getElementById('room-view');
+
+        function openMobileSidebar() {
+            sidebar.classList.remove('translate-x-full');
+            sidebarBackdrop.classList.remove('hidden');
+        }
+
+        function closeMobileSidebar() {
+            sidebar.classList.add('translate-x-full');
+            sidebarBackdrop.classList.add('hidden');
+        }
+
+        document.getElementById('btn-mobile-menu').addEventListener('click', openMobileSidebar);
+        document.getElementById('btn-close-sidebar').addEventListener('click', closeMobileSidebar);
+        sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+
+        function openWorkspace() {
+            if (!currentUser) return;
+
+            authView.classList.add('hidden');
+            workspaceView.classList.remove('hidden');
+
+            document.getElementById('sidebar-username').textContent = currentUser.username;
+            document.getElementById('sidebar-avatar').textContent = currentUser.username.charAt(0);
+            document.getElementById('mobile-user-badge').textContent = currentUser.username;
+
+            renderSidebarGroups();
+
+            const myGroups = state.groups.filter(g => g.members.includes(currentUser.id));
+            let savedGroupId = null;
+            try { savedGroupId = localStorage.getItem(STORAGE_KEYS.ACTIVE_GROUP); } catch (e) {}
+
+            if (savedGroupId && myGroups.some(g => g.id === savedGroupId)) {
+                openGroupRoom(savedGroupId);
+            } else if (myGroups.length > 0) {
+                openGroupRoom(myGroups[0].id);
+            } else {
+                openGroupHub();
+            }
+        }
+
+        function renderSidebarGroups() {
+            const myGroups = state.groups.filter(g => g.members.includes(currentUser.id));
+            document.getElementById('sidebar-groups-count').textContent = myGroups.length;
+
+            const list = document.getElementById('sidebar-groups-list');
+            if (myGroups.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400 px-2 py-3">لا توجد مجموعات منضم إليها بعد.</p>`;
+                return;
+            }
+
+            list.innerHTML = myGroups.map(grp => {
+                const isSelected = grp.id === activeGroupId;
+                const isAdmin = grp.adminId === currentUser.id;
+                const pendingCount = (grp.pendingRequests || []).length;
+
+                return `
+                    <button type="button" data-select-group="${grp.id}"
+                        class="w-full text-right px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${isSelected ? 'bg-forest-light text-forest' : 'text-slate-700 hover:bg-slate-100'}">
+                        <span class="truncate">${escapeHTML(grp.name)}</span>
+                        ${isAdmin && pendingCount > 0
+                            ? `<span class="px-1.5 py-0.5 text-[10px] rounded-md bg-amber-100 text-amber-800 font-bold">${pendingCount}</span>`
+                            : ''}
+                    </button>
+                `;
+            }).join('');
+
+            list.querySelectorAll('[data-select-group]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    closeMobileSidebar();
+                    openGroupRoom(btn.dataset.selectGroup);
+                });
+            });
+        }
+
+        document.getElementById('btn-open-hub').addEventListener('click', () => {
+            closeMobileSidebar();
+            openGroupHub();
+        });
+
+        // ============================================================
+        // 6. GROUPS HUB
+        // ============================================================
+        function openGroupHub() {
+            activeGroupId = null;
+            try { localStorage.removeItem(STORAGE_KEYS.ACTIVE_GROUP); } catch (e) {}
+            roomView.classList.add('hidden');
+            hubView.classList.remove('hidden');
+            renderSidebarGroups();
+            renderHubGroups();
+        }
+
+        document.getElementById('hub-search-input').addEventListener('input', renderHubGroups);
+
+        function renderHubGroups() {
+            const query = document.getElementById('hub-search-input').value.trim().toLowerCase();
+            const container = document.getElementById('hub-groups-list');
+
+            const filtered = state.groups.filter(g => {
+                if (!query) return true;
+                return g.name.toLowerCase().includes(query) ||
+                       g.adminName.toLowerCase().includes(query) ||
+                       (g.description || '').toLowerCase().includes(query);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-8 text-center border border-dashed border-slate-200 rounded-xl">
+                        <p class="text-xs text-slate-500">لا توجد مجموعات مطابقة للبحث.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(grp => {
+                const isMember = grp.members.includes(currentUser.id);
+                const isPending = (grp.pendingRequests || []).some(r => r.userId === currentUser.id);
+
+                let buttonHTML = '';
+                if (isMember) {
+                    buttonHTML = `<button type="button" data-open-grp="${grp.id}" class="w-full py-2 px-3 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl transition-colors">فتح المجموعة</button>`;
+                } else if (isPending) {
+                    buttonHTML = `<div class="w-full py-2 px-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium rounded-xl text-center">بانتظار الموافقة</div>`;
+                } else {
+                    buttonHTML = `<button type="button" data-join-grp="${grp.id}" class="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors">طلب انضمام</button>`;
+                }
+
+                return `
+                    <div class="p-4 rounded-xl border border-slate-200 bg-stoneBg/60 flex flex-col justify-between gap-3">
+                        <div>
+                            <div class="flex items-center justify-between gap-2">
+                                <h4 class="text-sm font-bold text-slate-900 break-words min-w-0">${escapeHTML(grp.name)}</h4>
+                                <span class="text-[11px] text-slate-400 shrink-0">${grp.members.length} أعضاء</span>
+                            </div>
+                            ${grp.description ? `<p class="text-xs text-slate-500 mt-1 break-words">${escapeHTML(grp.description)}</p>` : ''}
+                            <p class="text-[11px] text-slate-400 mt-2">المشرف: ${escapeHTML(grp.adminName)}</p>
+                        </div>
+                        ${buttonHTML}
+                    </div>
+                `;
+            }).join('');
+
+            container.querySelectorAll('[data-open-grp]').forEach(btn => {
+                btn.addEventListener('click', () => openGroupRoom(btn.dataset.openGrp));
+            });
+            container.querySelectorAll('[data-join-grp]').forEach(btn => {
+                btn.addEventListener('click', () => requestJoinGroup(btn.dataset.joinGrp));
+            });
+        }
+
+        function requestJoinGroup(groupId) {
+            loadDatabase();
+            const grp = state.groups.find(g => g.id === groupId);
+            if (!grp) return;
+
+            grp.pendingRequests = grp.pendingRequests || [];
+            if (grp.members.includes(currentUser.id) || grp.pendingRequests.some(r => r.userId === currentUser.id)) {
+                return;
+            }
+
+            grp.pendingRequests.push({
+                userId: currentUser.id,
+                username: currentUser.username,
+                requestedAt: Date.now()
+            });
+
+            saveDatabase();
+            renderHubGroups();
+            showToast(`تم إرسال طلب الانضمام إلى ${grp.name}`, 'success');
+        }
+
+        document.getElementById('create-group-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            loadDatabase();
+            const name = cleanName(document.getElementById('new-group-name').value);
+            const description = cleanName(document.getElementById('new-group-desc').value);
+            if (!name) return;
+
+            if (state.groups.some(g => nameKey(g.name) === nameKey(name))) {
+                showToast('يوجد مجموعة بنفس الاسم، اختر اسماً آخر', 'error');
+                return;
+            }
+
+            const newGroup = {
+                id: 'grp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                name,
+                description,
+                adminId: currentUser.id,
+                adminName: currentUser.username,
+                members: [currentUser.id],
+                pendingRequests: [],
+                createdAt: Date.now()
+            };
+
+            state.groups.push(newGroup);
+            state.logs[newGroup.id] = [];
+            saveDatabase();
+
+            document.getElementById('create-group-form').reset();
+            showToast('تم إنشاء المجموعة', 'success');
+            openGroupRoom(newGroup.id);
+        });
+
+        // ============================================================
+        // 7. ROOM, APPROVALS, ATTENDANCE
+        // ============================================================
+        function openGroupRoom(groupId) {
+            const grp = state.groups.find(g => g.id === groupId);
+            if (!grp || !grp.members.includes(currentUser.id)) {
+                openGroupHub();
+                return;
+            }
+
+            activeGroupId = groupId;
+            try { localStorage.setItem(STORAGE_KEYS.ACTIVE_GROUP, groupId); } catch (e) {}
+
+            hubView.classList.add('hidden');
+            roomView.classList.remove('hidden');
+
+            updateLiveClock();
+            renderSidebarGroups();
+            renderRoomHeader(grp);
+            renderFeed();
+        }
+
+        function renderRoomHeader(grp) {
+            const isAdmin = grp.adminId === currentUser.id;
+            const pending = grp.pendingRequests || [];
+
+            document.getElementById('room-title').textContent = grp.name;
+            document.getElementById('room-subtitle').textContent = `المشرف: ${grp.adminName}${grp.description ? ' • ' + grp.description : ''}`;
+            document.getElementById('room-role-badge').textContent = isAdmin ? 'مشرف' : 'عضو';
+            document.getElementById('room-members-count').textContent = grp.members.length;
+
+            const pendingDot = document.getElementById('room-pending-dot');
+            pendingDot.classList.toggle('hidden', !(isAdmin && pending.length > 0));
+
+            const adminBar = document.getElementById('admin-requests-bar');
+            const pendingContainer = document.getElementById('admin-pending-items');
+
+            if (isAdmin && pending.length > 0) {
+                adminBar.classList.remove('hidden');
+                document.getElementById('admin-pending-count').textContent = pending.length;
+
+                pendingContainer.innerHTML = pending.map(req => `
+                    <div class="inline-flex items-center gap-2 bg-white border border-amber-200 px-2.5 py-1 rounded-lg text-xs">
+                        <span class="font-semibold text-slate-800">${escapeHTML(req.username)}</span>
+                        <button type="button" data-approve="${req.userId}" class="px-2 py-0.5 bg-forest text-white rounded-md font-medium hover:bg-forest-hover">قبول</button>
+                        <button type="button" data-reject="${req.userId}" class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium hover:bg-rose-50 hover:text-rose-700">رفض</button>
+                    </div>
+                `).join('');
+
+                pendingContainer.querySelectorAll('[data-approve]').forEach(btn => {
+                    btn.addEventListener('click', () => handleJoinDecision(grp.id, btn.dataset.approve, true));
+                });
+                pendingContainer.querySelectorAll('[data-reject]').forEach(btn => {
+                    btn.addEventListener('click', () => handleJoinDecision(grp.id, btn.dataset.reject, false));
+                });
+            } else {
+                adminBar.classList.add('hidden');
+            }
+        }
+
+        function handleJoinDecision(groupId, targetUserId, isApproved) {
+            loadDatabase();
+            const grp = state.groups.find(g => g.id === groupId);
+            if (!grp) return;
+            if (grp.adminId !== currentUser.id) return; // sadece admin
+
+            const reqObj = (grp.pendingRequests || []).find(r => r.userId === targetUserId);
+            grp.pendingRequests = (grp.pendingRequests || []).filter(r => r.userId !== targetUserId);
+
+            if (isApproved) {
+                if (!grp.members.includes(targetUserId)) {
+                    grp.members.push(targetUserId);
+                }
+                if (reqObj) {
+                    addFeedRecord(groupId, {
+                        type: 'system',
+                        userId: targetUserId,
+                        username: reqObj.username,
+                        text: `انضم ${reqObj.username} إلى المجموعة`,
+                        timestamp: Date.now()
+                    });
+                    showToast(`تم قبول ${reqObj.username}`, 'success');
+                }
+            } else if (reqObj) {
+                showToast(`تم رفض طلب ${reqObj.username}`);
+            }
+
+            saveDatabase();
+            renderSidebarGroups();
+            renderRoomHeader(grp);
+            renderFeed();
+        }
+
+        document.getElementById('btn-log-entry').addEventListener('click', () => {
+            if (!currentUser || !activeGroupId) return;
+
+            const nowMs = Date.now();
+            if (nowMs - lastCheckInTime < 4000) {
+                showToast('تم تسجيل حضورك قبل لحظات');
+                return;
+            }
+            lastCheckInTime = nowMs;
+            loadDatabase();
+
+            addFeedRecord(activeGroupId, {
+                type: 'entry',
+                userId: currentUser.id,
+                username: currentUser.username,
+                text: formatEntrySentence(currentUser.username, new Date(nowMs)),
+                timestamp: nowMs
+            });
+
+            saveDatabase();
+            renderFeed();
+            showToast('تم تسجيل حضورك', 'success');
+        });
+
+        document.getElementById('message-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!currentUser || !activeGroupId) return;
+
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            loadDatabase();
+            addFeedRecord(activeGroupId, {
+                type: 'message',
+                userId: currentUser.id,
+                username: currentUser.username,
+                text,
+                timestamp: Date.now()
+            });
+
+            saveDatabase();
+            renderFeed();
+        });
+
+        function addFeedRecord(groupId, record) {
+            state.logs[groupId] = state.logs[groupId] || [];
+            state.logs[groupId].push({
+                id: 'log-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                ...record
+            });
+        }
+
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                currentFilter = tab.dataset.filter;
+                document.querySelectorAll('.filter-tab').forEach(t => {
+                    t.className = 'filter-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900';
+                });
+                tab.className = 'filter-tab px-2.5 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-sm';
+                renderFeed();
+            });
+        });
+
+        function renderFeed() {
+            if (!activeGroupId) return;
+            const records = state.logs[activeGroupId] || [];
+
+            const todayCount = records.filter(r => r.type === 'entry' && isToday(r.timestamp)).length;
+            document.getElementById('today-entries-count').textContent = todayCount;
+
+            let filtered = records;
+            if (currentFilter === 'today') {
+                filtered = records.filter(r => isToday(r.timestamp));
+            } else if (currentFilter === 'entries') {
+                filtered = records.filter(r => r.type === 'entry');
+            }
+
+            const feedEl = document.getElementById('feed-list');
+            if (filtered.length === 0) {
+                feedEl.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center py-12">
+                        <p class="text-sm font-medium text-slate-500">لا توجد سجلات لعرضها</p>
+                        <p class="text-xs text-slate-400 mt-1">اضغط على "تسجيل الحضور الآن" لتوثيق وقت الدخول</p>
+                    </div>
+                `;
+                return;
+            }
+
+            feedEl.innerHTML = filtered.map(item => {
+                const isMine = item.userId === currentUser.id;
+                const shortTime = formatShortTime(item.timestamp);
+
+                if (item.type === 'entry') {
+                    return `
+                        <div class="flex flex-col ${isMine ? 'items-start' : 'items-end'} fade-in">
+                            <div class="max-w-[92%] sm:max-w-[75%] bg-forest-light border border-forest-border text-slate-900 px-4 py-3 rounded-2xl ${isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'}">
+                                <div class="flex items-center justify-between gap-4 mb-1">
+                                    <span class="text-[11px] font-semibold text-forest">تسجيل حضور</span>
+                                    <span class="text-[11px] text-slate-500">${shortTime}</span>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-900 leading-relaxed break-words">${escapeHTML(item.text)}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (item.type === 'system') {
+                    return `
+                        <div class="flex justify-center py-1 fade-in">
+                            <span class="text-[11px] text-slate-500 bg-white border border-slate-200 px-3 py-1 rounded-full">${escapeHTML(item.text)}</span>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="flex flex-col ${isMine ? 'items-start' : 'items-end'} fade-in">
+                        <div class="max-w-[85%] sm:max-w-[70%] bg-white border border-slate-200 text-slate-800 px-3.5 py-2.5 rounded-2xl ${isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'}">
+                            <div class="flex items-center justify-between gap-4 mb-1">
+                                <span class="text-xs font-semibold text-slate-700">${escapeHTML(item.username)}</span>
+                                <span class="text-[11px] text-slate-400">${shortTime}</span>
+                            </div>
+                            <p class="text-sm text-slate-800 leading-relaxed break-words">${escapeHTML(item.text)}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            feedEl.scrollTop = feedEl.scrollHeight;
+        }
+
+        document.getElementById('btn-copy-summary').addEventListener('click', () => {
+            const grp = state.groups.find(g => g.id === activeGroupId);
+            if (!grp) return;
+
+            const records = (state.logs[activeGroupId] || []).filter(r => r.type === 'entry' && isToday(r.timestamp));
+            if (records.length === 0) {
+                showToast('لا توجد سجلات حضور لليوم');
+                return;
+            }
+
+            const lines = [
+                `سجل حضور اليوم — ${grp.name}`,
+                ...records.map((r, i) => `${i + 1}. ${r.text}`)
+            ].join('\n');
+
+            const done = () => showToast('تم نسخ ملخص حضور اليوم', 'success');
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(lines).then(done).catch(() => showToast('تعذر النسخ', 'error'));
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = lines;
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); done(); } catch (e) { showToast('تعذر النسخ', 'error'); }
+                document.body.removeChild(ta);
+            }
+        });
+
+        // ============================================================
+        // 8. MEMBERS MODAL
+        // ============================================================
+        const membersModal = document.getElementById('members-modal');
+
+        document.getElementById('btn-open-members').addEventListener('click', renderMembersModal);
+        document.getElementById('btn-close-members').addEventListener('click', () => membersModal.classList.add('hidden'));
+        membersModal.addEventListener('click', (e) => {
+            if (e.target === membersModal) membersModal.classList.add('hidden');
+        });
+
+        function renderMembersModal() {
+            const grp = state.groups.find(g => g.id === activeGroupId);
+            if (!grp) return;
+
+            const isAdmin = grp.adminId === currentUser.id;
+            const body = document.getElementById('members-modal-body');
+
+            body.innerHTML = grp.members.map(memberId => {
+                const userObj = state.users.find(u => u.id === memberId);
+                const name = userObj ? userObj.username : (memberId === grp.adminId ? grp.adminName : 'عضو');
+                const isGroupAdmin = memberId === grp.adminId;
+
+                return `
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-stoneBg border border-slate-200/80">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">${escapeHTML(name.charAt(0))}</div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-900">${escapeHTML(name)}</div>
+                                <div class="text-[11px] text-slate-500">${isGroupAdmin ? 'مشرف المجموعة' : 'عضو'}</div>
+                            </div>
+                        </div>
+                        ${isAdmin && !isGroupAdmin
+                            ? `<button type="button" data-remove-member="${memberId}" class="text-xs text-rose-600 hover:underline font-medium">إزالة</button>`
+                            : ''}
+                    </div>
+                `;
+            }).join('');
+
+            body.querySelectorAll('[data-remove-member]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    loadDatabase();
+                    const g = state.groups.find(x => x.id === activeGroupId);
+                    if (!g) return;
+                    const targetId = btn.dataset.removeMember;
+                    if (g.adminId !== currentUser.id || targetId === g.adminId) return;
+
+                    const targetUser = state.users.find(u => u.id === targetId);
+                    const removedName = targetUser ? targetUser.username : 'عضو';
+                    g.members = g.members.filter(id => id !== targetId);
+                    addFeedRecord(g.id, {
+                        type: 'system', userId: targetId, username: removedName,
+                        text: `تمت إزالة ${removedName} من المجموعة`, timestamp: Date.now()
+                    });
+                    saveDatabase();
+                    renderRoomHeader(g);
+                    renderFeed();
+                    renderSidebarGroups();
+                    renderMembersModal();
+                    showToast(`تمت إزالة ${removedName}`);
+                });
+            });
+
+            membersModal.classList.remove('hidden');
+        }
+
+        // ============================================================
+        // 9. MULTI-TAB SYNC
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key !== STORAGE_KEYS.DB || !e.newValue || !currentUser) return;
+            loadDatabase();
+            if (!state.users.some(u => u.id === currentUser.id)) return;
+            renderSidebarGroups();
+            if (activeGroupId) {
+                const g = state.groups.find(x => x.id === activeGroupId);
+                if (g && g.members.includes(currentUser.id)) {
+                    renderRoomHeader(g);
+                    renderFeed();
+                } else {
+                    membersModal.classList.add('hidden');
+                    openGroupHub();
+                }
+            } else if (!hubView.classList.contains('hidden')) {
+                renderHubGroups();
+            }
+        });
+
+        // ============================================================
+        // 10. INIT
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDatabase();
+            const existingUser = restoreSession();
+            if (existingUser) {
+                currentUser = existingUser;
+                openWorkspace();
+            } else {
+                authView.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
